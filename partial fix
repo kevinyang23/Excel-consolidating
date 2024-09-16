@@ -1,8 +1,7 @@
 Sub ConsolidateFilesWithPartialNamesAndPasswordsStatus()
-    Dim i As Long, lastRow As Long, folderPath As String
-    Dim partialFileName As String, password As String
-    Dim fullFileName As String, copySheetName As String, targetSheetName As String
-    Dim wbSource As Workbook, wsSource As Worksheet, file As String
+    Dim i As Long, lastRow As Long, folderPath As String, partialFileName As String, password As String
+    Dim fullFileName As String, copySheetName As String, targetSheetName As String, wbSource As Workbook, file As String
+    
     Set fileSheet = ThisWorkbook.Sheets("FileList")
     folderPath = fileSheet.Range("A1").Value
     lastRow = fileSheet.Cells(fileSheet.Rows.Count, "B").End(xlUp).Row
@@ -13,12 +12,12 @@ Sub ConsolidateFilesWithPartialNamesAndPasswordsStatus()
         targetSheetName = Trim(fileSheet.Cells(i, 5).Value)
         copySheetName = Trim(fileSheet.Cells(i, 6).Value)
         
-        If ValidateRow(partialFileName, copySheetName, targetSheetName) Then
+        If partialFileName <> "" And copySheetName <> "" And targetSheetName <> "" Then
             file = Dir(folderPath & "\" & "*" & partialFileName & "*.xlsx")
             If file <> "" Then
                 fullFileName = folderPath & "\" & file
                 Set wbSource = Workbooks.Open(fullFileName, Password:=password)
-                If Not wbSource Is Nothing Then ProcessWorkbook wbSource, i, copySheetName, targetSheetName
+                If Not wbSource Is Nothing Then ProcessWorkbookPartial wbSource, i, copySheetName, targetSheetName
                 wbSource.Close False
             Else
                 UpdateStatus i, "File Not Found", RGB(255, 99, 71)
@@ -28,15 +27,14 @@ Sub ConsolidateFilesWithPartialNamesAndPasswordsStatus()
     MsgBox "Consolidation complete."
 End Sub
 
-Sub ProcessWorkbook(wbSource As Workbook, i As Long, copySheetName As String, targetSheetName As String)
-    Dim sheetFound As Boolean, ws As Worksheet
-    sheetFound = False
+Sub ProcessWorkbookPartial(wbSource As Workbook, i As Long, copySheetName As String, targetSheetName As String)
+    Dim ws As Worksheet, sheetFound As Boolean
     For Each ws In wbSource.Sheets
         If InStr(1, ws.Name, copySheetName, vbTextCompare) > 0 Then
             Set targetSheet = GetOrCreateSheet(targetSheetName)
-            CopyValues ws, targetSheet
+            If Not ws Is Nothing Then CopyValues ws, targetSheet
             UpdateStatus i, "Success", RGB(144, 238, 144)
-            sheetFound = True
+            sheetFound = True: Exit For
         End If
     Next ws
     If Not sheetFound Then UpdateStatus i, "Source Sheet Not Found", RGB(255, 99, 71)
@@ -53,8 +51,12 @@ Function GetOrCreateSheet(sheetName As String) As Worksheet
 End Function
 
 Sub CopyValues(sourceSheet As Worksheet, targetSheet As Worksheet)
-    targetSheet.Cells.Clear
-    targetSheet.Range("A1").Resize(sourceSheet.UsedRange.Rows.Count, sourceSheet.UsedRange.Columns.Count).Value = sourceSheet.UsedRange.Value
+    If WorksheetFunction.CountA(sourceSheet.UsedRange) > 0 Then
+        targetSheet.Cells.Clear
+        targetSheet.Range("A1").Resize(sourceSheet.UsedRange.Rows.Count, sourceSheet.UsedRange.Columns.Count).Value = sourceSheet.UsedRange.Value
+    Else
+        MsgBox "Source sheet is empty. No data to copy."
+    End If
 End Sub
 
 Sub UpdateStatus(row As Long, statusText As String, statusColor As Long)
@@ -63,7 +65,3 @@ Sub UpdateStatus(row As Long, statusText As String, statusColor As Long)
         .Interior.Color = statusColor
     End With
 End Sub
-
-Function ValidateRow(partialFileName As String, copySheetName As String, targetSheetName As String) As Boolean
-    ValidateRow = (partialFileName <> "" And copySheetName <> "" And targetSheetName <> "")
-End Function
