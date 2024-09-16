@@ -1,0 +1,8 @@
+=IFERROR(
+    INDEX(INDIRECT("'"&Sheet1!B2&"'!$A$2:$Z$9999"), 
+          MATCH(1, 
+                (Sheet1!D2 = INDEX(INDIRECT("'"&Sheet1!B2&"'!$A$2:$Z$9999"), 0, MATCH("Manager Name", INDIRECT("'"&Sheet1!B2&"'!$A$1:$Z$1"), 0))) * 
+                (Sheet1!F2 = INDEX(INDIRECT("'"&Sheet1!B2&"'!$A$2:$Z$9999"), 0, MATCH("Date", INDIRECT("'"&Sheet1!B2&"'!$A$1:$Z$1"), 0))), 
+          0), 
+    MATCH(G$1, INDIRECT("'"&Sheet1!B2&"'!$A$1:$Z$1"), 0)), 
+"ERROR")
