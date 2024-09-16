@@ -1,0 +1,58 @@
+Sub ConsolidateFilesWithPartialNamesAndPasswordsStatus()
+    Dim i As Long, lastRow As Long
+    Dim folderPath As String, partialFileName As String, password As String
+    Dim fullFileName As String, copySheetName As String, targetSheetName As String
+    Dim wbSource As Workbook, wsSource As Worksheet, targetSheet As Worksheet
+    Dim fileSheet As Worksheet, file As String
+    
+    ' Set the sheet that contains the partial file names and passwords
+    Set fileSheet = ThisWorkbook.Sheets("FileList")
+    folderPath = fileSheet.Range("A1").Value
+    lastRow = fileSheet.Cells(fileSheet.Rows.Count, "B").End(xlUp).Row
+    
+    ' Loop through the partial file names and passwords
+    For i = 2 To lastRow
+        partialFileName = fileSheet.Cells(i, 2).Value
+        password = fileSheet.Cells(i, 3).Value
+        targetSheetName = fileSheet.Cells(i, 5).Value
+        copySheetName = fileSheet.Cells(i, 6).Value
+        
+        If partialFileName <> "" And copySheetName <> "" And targetSheetName <> "" Then
+            file = Dir(folderPath & "\" & "*" & partialFileName & "*.xlsx")
+            If file <> "" Then
+                fullFileName = folderPath & "\" & file
+                On Error Resume Next
+                Set wbSource = Workbooks.Open(fullFileName, password:=password)
+                Set wsSource = wbSource.Sheets(copySheetName)
+                On Error GoTo 0
+                
+                If Not wsSource Is Nothing Then
+                    ' Check or create the target sheet
+                    On Error Resume Next
+                    Set targetSheet = ThisWorkbook.Sheets(targetSheetName)
+                    If targetSheet Is Nothing Then
+                        Set targetSheet = ThisWorkbook.Sheets.Add
+                        targetSheet.Name = targetSheetName
+                    End If
+                    On Error GoTo 0
+                    
+                    ' Clear target sheet and copy data from source sheet
+                    targetSheet.Cells.Clear
+                    wsSource.UsedRange.Copy targetSheet.Range("A1")
+                    fileSheet.Cells(i, 4).Value = "Success"
+                    fileSheet.Cells(i, 4).Interior.Color = RGB(144, 238, 144) ' Light green
+                Else
+                    fileSheet.Cells(i, 4).Value = "Source Sheet Not Found"
+                    fileSheet.Cells(i, 4).Interior.Color = RGB(255, 99, 71) ' Red
+                End If
+                wbSource.Close False
+            Else
+                fileSheet.Cells(i, 4).Value = "File Not Found"
+                fileSheet.Cells(i, 4).Interior.Color = RGB(255, 99, 71) ' Red
+            End If
+        End If
+    Next i
+    
+    MsgBox "Consolidation complete."
+End Sub
+
