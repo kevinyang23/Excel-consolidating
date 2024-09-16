@@ -22,7 +22,7 @@ Sub ConsolidateFilesWithPartialNamesAndPasswordsStatus()
             If file <> "" Then
                 fullFileName = folderPath & "\" & file
                 On Error Resume Next
-                Set wbSource = Workbooks.Open(fullFileName, password:=password)
+                Set wbSource = Workbooks.Open(fullFileName, Password:=password)
                 Set wsSource = wbSource.Sheets(copySheetName)
                 On Error GoTo 0
                 
@@ -36,23 +36,22 @@ Sub ConsolidateFilesWithPartialNamesAndPasswordsStatus()
                     End If
                     On Error GoTo 0
                     
-                    ' Clear target sheet and copy data from source sheet
+                    ' Clear target sheet and copy values (no formatting)
                     targetSheet.Cells.Clear
-                    wsSource.UsedRange.Copy targetSheet.Range("A1")
+                    targetSheet.Range("A1").Resize(wsSource.UsedRange.Rows.Count, wsSource.UsedRange.Columns.Count).Value = wsSource.UsedRange.Value
                     fileSheet.Cells(i, 4).Value = "Success"
-                    fileSheet.Cells(i, 4).Interior.Color = RGB(144, 238, 144) ' Light green
+                    fileSheet.Cells(i, 4).Interior.Color = RGB(144, 238, 144) ' Light green for success
                 Else
                     fileSheet.Cells(i, 4).Value = "Source Sheet Not Found"
-                    fileSheet.Cells(i, 4).Interior.Color = RGB(255, 99, 71) ' Red
+                    fileSheet.Cells(i, 4).Interior.Color = RGB(255, 99, 71) ' Red for error
                 End If
                 wbSource.Close False
             Else
                 fileSheet.Cells(i, 4).Value = "File Not Found"
-                fileSheet.Cells(i, 4).Interior.Color = RGB(255, 99, 71) ' Red
+                fileSheet.Cells(i, 4).Interior.Color = RGB(255, 99, 71) ' Red for error
             End If
         End If
     Next i
     
     MsgBox "Consolidation complete."
 End Sub
-
